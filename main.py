@@ -37,3 +37,28 @@ def create_task(task_data: dict):
     new_task = {"id": new_id, "title": title, "done": False}
     tasks.append(new_task)
     return new_task
+
+@app.put("/tasks/{task_id}")
+def update_task(task_id: int, task_data: dict):
+    if not task_data:
+        raise HTTPException(status_code=400, detail="Empty body")
+    
+    for task in tasks:
+        if task["id"] == task_id:
+            if "title" in task_data:
+                title = str(task_data["title"]).strip()
+                if not title:
+                    raise HTTPException(status_code=400, detail="Title cannot be empty")
+                task["title"] = title
+            if "done" in task_data:
+                task["done"] = bool(task_data["done"])
+            return task
+    raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+
+@app.delete("/tasks/{task_id}", status_code=204)
+def delete_task(task_id: int):
+    for i, task in enumerate(tasks):
+        if task["id"] == task_id:
+            del tasks[i]
+            return
+    raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
