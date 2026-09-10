@@ -10,18 +10,22 @@ tasks = [
 
 @app.get("/")
 def read_root():
+    """Returns API metadata."""
     return {"name": "Task API", "version": "1.0", "endpoints": ["/tasks"]}
 
 @app.get("/health")
 def read_health():
+    """Health check endpoint to verify server status."""
     return {"status": "ok"}
 
 @app.get("/tasks")
 def read_tasks():
+    """Retrieve all tasks."""
     return tasks
 
 @app.get("/tasks/{task_id}")
 def read_task(task_id: int):
+    """Retrieve a specific task by its ID."""
     for task in tasks:
         if task["id"] == task_id:
             return task
@@ -29,6 +33,7 @@ def read_task(task_id: int):
 
 @app.post("/tasks", status_code=201)
 def create_task(task_data: dict):
+    """Create a new task."""
     if "title" not in task_data or not str(task_data["title"]).strip():
         raise HTTPException(status_code=400, detail="Title missing or empty")
     
@@ -40,6 +45,7 @@ def create_task(task_data: dict):
 
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, task_data: dict):
+    """Update an existing task's title or completion status."""
     if not task_data:
         raise HTTPException(status_code=400, detail="Empty body")
     
@@ -57,6 +63,7 @@ def update_task(task_id: int, task_data: dict):
 
 @app.delete("/tasks/{task_id}", status_code=204)
 def delete_task(task_id: int):
+    """Delete a task by its ID."""
     for i, task in enumerate(tasks):
         if task["id"] == task_id:
             del tasks[i]
