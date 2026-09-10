@@ -46,4 +46,3 @@ content-type: application/json
 
 ![Swagger UI](swagger-screenshot.png)
 
-*(Make sure to run the server, go to http://localhost:8000/docs, take a screenshot, and save it here as `swagger-screenshot.png` before pushing to GitHub!)*
