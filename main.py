@@ -1,12 +1,23 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from sqlmodel import Session, select
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+from models import Task
+from database import create_db_and_tables, get_session, engine
 
-tasks = [
-    {"id": 1, "title": "Buy groceries", "done": False},
-    {"id": 2, "title": "Finish FlyRank assignment", "done": False},
-    {"id": 3, "title": "Read a book", "done": True},
-]
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    with Session(engine) as session:
+        task_count = session.exec(select(Task)).first()
+        if not task_count:
+            session.add(Task(title="Buy groceries", done=False))
+            session.add(Task(title="Finish FlyRank assignment", done=False))
+            session.add(Task(title="Read a book", done=True))
+            session.commit()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def read_root():
