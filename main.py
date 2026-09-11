@@ -43,15 +43,14 @@ def read_task(task_id: int, session: Session = Depends(get_session)):
     return task
 
 @app.post("/tasks", status_code=201)
-def create_task(task_data: dict):
-    """Create a new task."""
-    if "title" not in task_data or not str(task_data["title"]).strip():
-        raise HTTPException(status_code=400, detail="Title missing or empty")
+def create_task(task_data: dict, session: Session = Depends(get_session)):
+    if "title" not in task_data or not task_data["title"].strip():
+        raise HTTPException(status_code=400, detail="Title is required")
     
-    title = str(task_data["title"]).strip()
-    new_id = max((t["id"] for t in tasks), default=0) + 1
-    new_task = {"id": new_id, "title": title, "done": False}
-    tasks.append(new_task)
+    new_task = Task(title=task_data["title"], done=task_data.get("done", False))
+    session.add(new_task)
+    session.commit()
+    session.refresh(new_task)
     return new_task
 
 @app.put("/tasks/{task_id}")
