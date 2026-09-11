@@ -30,17 +30,17 @@ def read_health():
     return {"status": "ok"}
 
 @app.get("/tasks")
-def read_tasks():
+def read_tasks(session: Session = Depends(get_session)):
     """Retrieve all tasks."""
-    return tasks
+    return session.exec(select(Task)).all()
 
 @app.get("/tasks/{task_id}")
-def read_task(task_id: int):
+def read_task(task_id: int, session: Session = Depends(get_session)):
     """Retrieve a specific task by its ID."""
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
-    raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    task = session.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    return task
 
 @app.post("/tasks", status_code=201)
 def create_task(task_data: dict):
