@@ -54,28 +54,27 @@ def create_task(task_data: dict, session: Session = Depends(get_session)):
     return new_task
 
 @app.put("/tasks/{task_id}")
-def update_task(task_id: int, task_data: dict):
-    """Update an existing task's title or completion status."""
-    if not task_data:
-        raise HTTPException(status_code=400, detail="Empty body")
-    
-    for task in tasks:
-        if task["id"] == task_id:
-            if "title" in task_data:
-                title = str(task_data["title"]).strip()
-                if not title:
-                    raise HTTPException(status_code=400, detail="Title cannot be empty")
-                task["title"] = title
-            if "done" in task_data:
-                task["done"] = bool(task_data["done"])
-            return task
-    raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+def update_task(task_id: int, task_data: dict, session: Session = Depends(get_session)):
+    task = session.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        
+    if "title" in task_data:
+        task.title = task_data["title"]
+    if "done" in task_data:
+        task.done = task_data["done"]
+        
+    session.add(task)
+    session.commit()
+    session.refresh(task)
+    return task
 
 @app.delete("/tasks/{task_id}", status_code=204)
-def delete_task(task_id: int):
-    """Delete a task by its ID."""
-    for i, task in enumerate(tasks):
-        if task["id"] == task_id:
-            del tasks[i]
-            return
-    raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+def delete_task(task_id: int, session: Session = Depends(get_session)):
+    task = session.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        
+    session.delete(task)
+    session.commit()
+    return None
