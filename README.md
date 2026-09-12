@@ -21,5 +21,3 @@ SELECT * FROM tasks WHERE done = 1;
 
 ## Database Screenshot
 ![DB Viewer Screenshot](db-screenshot.png)
-
-*(Take a screenshot of DB Browser showing your database and save it here as `db-screenshot.png` before pushing to GitHub!)*
