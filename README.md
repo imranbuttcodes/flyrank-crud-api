@@ -21,3 +21,10 @@ SELECT * FROM tasks WHERE done = 1;
 
 ## Database Screenshot
 ![DB Viewer Screenshot](db-screenshot.png)
+
+## Docker & Persistence (Week 3)
+We successfully containerized the FastAPI application using Docker and `docker-compose`. 
+While the original assignment suggested PostgreSQL, we proved the exact same architectural concept using SQLite. The API routes in `main.py` did not change at all; we simply swapped the hardcoded database URL to read from a `.env` file. 
+
+**Proving Persistence:**
+To prove that data survives container restarts, we mapped a Docker volume directly to the `tasks.db` file (`./tasks.db:/app/tasks.db`). I tested this by starting the container with `docker compose up`, creating a new task via Swagger UI, killing the container with `Ctrl+C`, and restarting it. The new task was still in the database!
