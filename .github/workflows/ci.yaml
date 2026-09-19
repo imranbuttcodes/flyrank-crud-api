@@ -1,0 +1,27 @@
+name: CI Pipeline
+
+# When should the robot run?
+on: 
+  push:
+    branches: [ "main" ]
+
+# What jobs should the robot do?
+jobs:
+  test-our-code:
+    runs-on: ubuntu-latest  # The robot gets a brand new Ubuntu Linux computer in the cloud
+    
+    # What exact steps should the robot take?
+    steps:
+      - name: Download your code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pytest
+        run: pip install pytest
+
+      - name: Run the tests!
+        run: pytest
