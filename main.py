@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Header
 from sqlmodel import Session, select
 from contextlib import asynccontextmanager
 
@@ -116,3 +116,27 @@ def login(creds: UserCredentials):
     except Exception as e:
         # If Supabase throws an error (e.g. wrong password), return 401
         raise HTTPException(status_code=401, detail={"error": "Invalid login credentials"})
+
+
+# --- Gate Routes (Stage 2) ---
+
+@app.get("/public/info")
+def public_info():
+    return {"message": "Welcome stranger! This info is public."}
+
+@app.get("/protected/profile")
+def protected_profile(authorization: str = Header(None)):
+    # 1. Check if they sent an Authorization header at all
+    if not authorization:
+        raise HTTPException(status_code=401, detail={"error": "Access token required"})
+        
+    # 2. Check if the header is formatted correctly ("Bearer token123...")
+    parts = authorization.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail={"error": "Access token required"})
+        
+    # 3. Extract just the token string itself
+    token = parts[1]
+    
+    # We are just proving we grabbed the token for now. In Stage 3, we will verify it!
+    return {"message": "You made it to the protected route!", "token": token}
