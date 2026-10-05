@@ -118,6 +118,27 @@ def login(creds: UserCredentials):
         raise HTTPException(status_code=401, detail={"error": "Invalid login credentials"})
 
 
+
+
+# --- Security Guard (Dependency) ---
+def verify_token(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail={"error": "Access token required"})
+        
+    parts = authorization.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail={"error": "Access token required"})
+        
+    token = parts[1]
+    
+    try:
+        response = supabase.auth.get_user(token)
+        # We return both the user and the token (we need the token for logout later)
+        return {"user": response.user, "token": token}
+    except Exception:
+        raise HTTPException(status_code=401, detail={"error": "Invalid or expired token"})
+
+
 # --- Gate Routes (Stage 2) ---
 
 @app.get("/public/info")
@@ -125,30 +146,18 @@ def public_info():
     return {"message": "Welcome stranger! This info is public."}
 
 @app.get("/protected/profile")
-def protected_profile(authorization: str = Header(None)):
-    # 1. Check if they sent an Authorization header
-    if not authorization:
-        raise HTTPException(status_code=401, detail={"error": "Access token required"})
-        
-    # 2. Check if the header is formatted correctly
-    parts = authorization.split(" ")
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail={"error": "Access token required"})
-        
-    token = parts[1]
-    
-    # 3. VERIFY THE TOKEN!
-    try:
-        # We ask Supabase: "Is this token real?"
-        response = supabase.auth.get_user(token)
-        
-        # If Supabase says yes, we return the user's secure metadata!
-        return {
-            "message": "Welcome to the VIP area!", 
-            "user_email": response.user.email,
-            "user_id": response.user.id
-        }
-    except Exception as e:
-        # If the token is expired, fake, or tampered with, Supabase throws an error!
-        raise HTTPException(status_code=401, detail={"error": "Invalid or expired token"})
+def protected_profile(auth_data: dict = Depends(verify_token)):
+    # The route ONLY runs if verify_token succeeds!
+    user = auth_data["user"]
+    return {
+        "message": "Welcome to the VIP area!", 
+        "user_email": user.email,
+        "user_id": user.id
+    }
 
+
+@app.post("/auth/logout", status_code=204)
+def logout(auth_data: dict = Depends(verify_token)):
+    # Tell Supabase to destroy the session on their servers
+    supabase.auth.sign_out()
+    return None
