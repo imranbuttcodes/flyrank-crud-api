@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, Depends
 from sqlmodel import Session, select
 from contextlib import asynccontextmanager
 
-from models import Task
-from database import create_db_and_tables, get_session, engine
+from models import Task, UserCredentials
+from database import create_db_and_tables, get_session, engine, supabase
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -78,3 +78,41 @@ def delete_task(task_id: int, session: Session = Depends(get_session)):
     session.delete(task)
     session.commit()
     return None
+
+
+# --- Auth Routes ---
+
+@app.post("/auth/signup", status_code=201)
+def signup(creds: UserCredentials):
+    if not creds.email.strip() or not creds.password.strip():
+        raise HTTPException(status_code=400, detail="Email and password cannot be empty")
+        
+    # Send the credentials to Supabase
+    response = supabase.auth.sign_up({
+        "email": creds.email,
+        "password": creds.password
+    })
+    
+    return {"message": "User created successfully!", "user": response.user}
+
+
+@app.post("/auth/login", status_code=200)
+def login(creds: UserCredentials):
+    if not creds.email.strip() or not creds.password.strip():
+        raise HTTPException(status_code=400, detail="Email and password cannot be empty")
+        
+    try:
+        # Ask Supabase to verify the password
+        response = supabase.auth.sign_in_with_password({
+            "email": creds.email,
+            "password": creds.password
+        })
+        # If successful, Supabase hands us the magical JWT Access Token!
+        return {
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token,
+            "token_type": "bearer"
+        }
+    except Exception as e:
+        # If Supabase throws an error (e.g. wrong password), return 401
+        raise HTTPException(status_code=401, detail={"error": "Invalid login credentials"})
