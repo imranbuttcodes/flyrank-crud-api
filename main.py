@@ -126,17 +126,29 @@ def public_info():
 
 @app.get("/protected/profile")
 def protected_profile(authorization: str = Header(None)):
-    # 1. Check if they sent an Authorization header at all
+    # 1. Check if they sent an Authorization header
     if not authorization:
         raise HTTPException(status_code=401, detail={"error": "Access token required"})
         
-    # 2. Check if the header is formatted correctly ("Bearer token123...")
+    # 2. Check if the header is formatted correctly
     parts = authorization.split(" ")
     if len(parts) != 2 or parts[0].lower() != "bearer":
         raise HTTPException(status_code=401, detail={"error": "Access token required"})
         
-    # 3. Extract just the token string itself
     token = parts[1]
     
-    # We are just proving we grabbed the token for now. In Stage 3, we will verify it!
-    return {"message": "You made it to the protected route!", "token": token}
+    # 3. VERIFY THE TOKEN!
+    try:
+        # We ask Supabase: "Is this token real?"
+        response = supabase.auth.get_user(token)
+        
+        # If Supabase says yes, we return the user's secure metadata!
+        return {
+            "message": "Welcome to the VIP area!", 
+            "user_email": response.user.email,
+            "user_id": response.user.id
+        }
+    except Exception as e:
+        # If the token is expired, fake, or tampered with, Supabase throws an error!
+        raise HTTPException(status_code=401, detail={"error": "Invalid or expired token"})
+
