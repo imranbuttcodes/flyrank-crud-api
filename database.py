@@ -3,6 +3,9 @@ from models import Task
 from dotenv import load_dotenv
 import os
 
+from supabase import create_client, Client
+
+
 load_dotenv()
 
 
@@ -16,3 +19,12 @@ def create_db_and_tables():
 def get_session():
     with Session(engine) as session:
         yield session
+
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise Exception("Supabase credentials not found in .env")
+# This creates the powerful 'supabase' object we will use for Auth
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+print("✅ Server running and connected to Supabase!")
