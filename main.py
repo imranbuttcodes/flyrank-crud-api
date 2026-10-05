@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
 from sqlmodel import Session, select
 from contextlib import asynccontextmanager
 
@@ -18,6 +19,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+security = HTTPBearer()
 
 @app.get("/")
 def read_root():
@@ -121,23 +123,16 @@ def login(creds: UserCredentials):
 
 
 # --- Security Guard (Dependency) ---
-def verify_token(authorization: str = Header(None)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail={"error": "Access token required"})
-        
-    parts = authorization.split(" ")
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail={"error": "Access token required"})
-        
-    token = parts[1]
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    # FastAPI's HTTPBearer automatically checks for the "Bearer " format for us!
+    token = credentials.credentials
     
     try:
         response = supabase.auth.get_user(token)
-        # We return both the user and the token (we need the token for logout later)
+        # We return both the user and the token
         return {"user": response.user, "token": token}
     except Exception:
         raise HTTPException(status_code=401, detail={"error": "Invalid or expired token"})
-
 
 # --- Gate Routes (Stage 2) ---
 
